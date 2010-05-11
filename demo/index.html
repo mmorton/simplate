@@ -1,0 +1,151 @@
+﻿<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+	<title></title>
+	<script src="../simplate.js" type="text/javascript"></script>
+	<script src="http://ajax.googleapis.com/ajax/libs/ext-core/3.1.0/ext-core.js" type="text/javascript"></script>    
+    <style>
+        body
+        {
+        	font-family: Arial;        
+        }
+        .sample 
+        {     
+        	border: solid 1px black;
+        	padding: 8px;
+        	margin: 0 0 16px 0;
+        }
+        .sample h1
+        {
+        	margin: 0;
+        	padding: 0;
+        	font-size: 1.2em;
+        }
+        .sample pre
+        {
+        	background: #DDDDDD;
+        	border: solid 1px black;
+        	padding: 4px;
+        	margin: 4px 0 0 0;
+        }       
+    </style>
+</head>
+<body>
+
+<div class="sample">
+<h1>basic</h1>
+<script type="text/javascript">
+new Simplate(
+    '<h1>Hello World</h1>'
+).apply();
+</script>
+</div>
+
+<div class="sample">
+<h1>with data</h1>
+<script type="text/javascript">
+new Simplate(
+    '<h1>Hello {%= name %}</h1>'
+).apply({
+    name: 'Bob'
+});
+</script>
+</div>
+
+<div class="sample">
+<h1>multi-line, with function call</h1>
+<script type="text/javascript">
+new Simplate([
+    '<h1>Hello {%= name %}</h1>',
+    '<h2>How are you today {%= name.toUpperCase() %}</h2>'  
+]).apply({
+    name: 'Bob'
+});
+</script>
+</div>
+
+<div class="sample">
+<h1>safe execution (try/catch)</h1>
+<script type="text/javascript">
+new Simplate([
+    '<h1>Hello {%= name %}</h1>\\n',
+    '<h2>How are you today {%$ name.other() %}</h2>'  
+]).apply();
+</script>
+</div>
+
+<div class="sample">
+<h1>sub-template</h1>
+<script type="text/javascript">
+new Simplate([
+    '<h1>Hello {%! format %}</h1>'
+]).apply({
+    name: 'Bob',
+    format: new Simplate([
+        '***{%= name %}***'
+    ])
+});
+</script>
+</div>
+
+<div class="sample">
+<h1>sub-template explicit</h1>
+<script type="text/javascript">
+new Simplate([
+    '<h1>Hello {%= format.apply({name: "Neo"}) %}</h1>'
+]).apply({
+    name: 'Bob',
+    format: new Simplate([
+        '***{%= name %}***'
+    ])
+});
+</script>
+</div>
+
+<div class="sample">
+<h1>loop</h1>
+<script type="text/javascript">
+new Simplate([
+    '{% for (var i = 0; i < names.length; i++) { %}',
+    '<h1>Hello {%= names[i] %}</h1>\\n',
+    '{% } %}'
+]).apply({
+    names: [
+        'Bob',
+        'Alice'
+    ]
+});
+</script>
+</div>
+
+<script type="text/javascript">
+Ext.onReady(function() {
+    var template = new Simplate([
+        '<pre>{%= source %}</pre>',
+        '<pre class="result">{%= result %}</pre>',        
+    ]);
+
+    var format = function(text) {
+        return text
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+    };
+    
+    Ext.getBody()
+        .select('.sample')
+        .each(function(el) {
+            var c = el.child('script').dom.innerHTML;                
+            var r = eval(c);
+            
+            Ext.DomHelper.append(
+                el, 
+                template.apply({
+                    source: format(c),
+                    result: format(r)
+                })
+            );
+        });    
+});
+</script>
+</body>
+</html>
