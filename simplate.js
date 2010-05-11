@@ -1,5 +1,5 @@
 /*!
- * simplate-js v1.0 
+ * simplate-js v1.1 
  * Copyright 2010, Michael Morton 
  * 
  * MIT Licensed - See LICENSE.txt
@@ -12,15 +12,27 @@
         }
     };
     var cache = {};
-    var merge = function(a, b) {
-        for (var n in b) a[n] = b[n];
+    var merge = function(a, b, c) {
+        if (c)
+            for (var n in c) a[n] = c[n];
+        if (b)
+            for (var n in b) a[n] = b[n];
         return a;
+    };
+    function encode(val) {
+        if (typeof val !== 'string') return val;
+
+        return val
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
     };
     var make = function(markup, o) {
         if (markup.join) markup = markup.join("");
         if (cache[markup]) return cache[markup];
 
-        var o = merge(o || {}, options);
+        var o = merge({}, o, options);
        
         if ('is,ie'.split(/(,)/).length !== 3)
         {
@@ -50,6 +62,9 @@
                     case "=":
                         fragments[i] = "__p(" + fragments[i].substr(1) + ");";
                         break;
+                    case ":":
+                        fragments[i] = "__p(__s.encode(" + fragments[i].substr(1) + "));";
+                        break;
                     case "$":
                         fragments[i] = "try {" + "__p(" + fragments[i].substr(1) + ");" + "} catch (__e) {}";
                         break;
@@ -64,10 +79,10 @@
         }
        
         for (var i = 0; i < fragments.length; i += 2)
-            fragments[i] = "__p('" + fragments[i].replace(new RegExp("'"), "\\'") + "');";
+            fragments[i] = "__p('" + fragments[i].replace(/'/g, "\\'").replace(/\n/g, "\\n") + "');";
            
         var source = [
-            'var __r = [], $ = __v || {}, __p = function() { __r.push.apply(__r, arguments); };',
+            'var __r = [], $ = __v || {}, __s = Simplate; __p = function() { __r.push.apply(__r, arguments); };',
             'with ($) {',
             fragments.join(''),
             '}',
@@ -99,4 +114,5 @@
     };
     
     Simplate.options = options;
+    Simplate.encode = encode;
 })();
