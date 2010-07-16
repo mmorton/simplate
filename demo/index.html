@@ -52,6 +52,17 @@ new Simplate(
 </div>
 
 <div class="sample">
+<h1>with data - alternate syntax</h1>
+<script type="text/noop">
+new Simplate(
+    '<h1>Hello {%= $["name"] %}</h1>'
+).apply({
+    name: 'Bob'
+});
+</script>
+</div>
+
+<div class="sample">
 <h1>multi-line, with function call</h1>
 <script type="text/noop">
 new Simplate([
