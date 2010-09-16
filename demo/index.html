@@ -64,16 +64,6 @@ new Simplate([
 </div>
 
 <div class="sample">
-<h1>safe execution (try/catch)</h1>
-<script type="text/noop">
-new Simplate([
-    '<h1>Hello {%= name %}</h1>\n',
-    '<h2>How are you today {%$ name.other() %}</h2>'  
-]).apply();
-</script>
-</div>
-
-<div class="sample">
 <h1>sub-template</h1>
 <script type="text/noop">
 new Simplate([
