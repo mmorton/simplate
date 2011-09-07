@@ -44,7 +44,7 @@ new Simplate(
 <h1>with data</h1>
 <script type="text/noop">
 new Simplate(
-    '<h1>Hello {%= name %}</h1>'
+    '<h1>Hello {%= $.name %}</h1>'
 ).apply({
     name: 'Bob'
 });
@@ -66,8 +66,8 @@ new Simplate(
 <h1>multi-line, with function call</h1>
 <script type="text/noop">
 new Simplate([
-    '<h1>Hello {%= name %}</h1>',
-    '<h2>How are you today {%= name.toUpperCase() %}</h2>'  
+    '<h1>Hello {%= $.name %}</h1>',
+    '<h2>How are you today {%= $.name.toUpperCase() %}</h2>'
 ]).apply({
     name: 'Bob'
 });
@@ -78,11 +78,11 @@ new Simplate([
 <h1>sub-template</h1>
 <script type="text/noop">
 new Simplate([
-    '<h1>Hello {%! format %}</h1>'
+    '<h1>Hello {%! $.format %}</h1>'
 ]).apply({
     name: 'Bob',
     format: new Simplate([
-        '***{%= name %}***'
+        '***{%= $.name %}***'
     ])
 });
 </script>
@@ -92,11 +92,11 @@ new Simplate([
 <h1>sub-template explicit</h1>
 <script type="text/noop">
 new Simplate([
-    '<h1>Hello {%= format.apply({name: "Neo"}) %}</h1>'
+    '<h1>Hello {%= $.format.apply({name: "Neo"}) %}</h1>'
 ]).apply({
     name: 'Bob',
     format: new Simplate([
-        '***{%= name %}***'
+        '***{%= $.name %}***'
     ])
 });
 </script>
@@ -106,8 +106,8 @@ new Simplate([
 <h1>loop</h1>
 <script type="text/noop">
 new Simplate([
-    '{% for (var i = 0; i < names.length; i++) { %}',
-    '<h1>Hello {%= names[i] %}</h1>\n',
+    '{% for (var i = 0; i < $.names.length; i++) { %}',
+    '<h1>Hello {%= $.names[i] %}</h1>\n',
     '{% } %}'
 ]).apply({
     names: [
@@ -122,7 +122,7 @@ new Simplate([
 <h1>encode output</h1>
 <script type="text/noop">
 new Simplate(
-    '<h1>Hello {%: name %}</h1>'
+    '<h1>Hello {%: $.name %}</h1>'
 ).apply({
     name: 'Bob & Alice'
 });
@@ -133,7 +133,7 @@ new Simplate(
 <h1>switch tags (local)</h1>
 <script type="text/noop">
 new Simplate(
-    '<h1>Hello <%= name %></h1>',
+    '<h1>Hello <%= $.name %></h1>',
     {
         tags: {begin: '<%', end: '%>'}
     }
@@ -143,11 +143,23 @@ new Simplate(
 </script>
 </div>
 
+<div class="sample">
+<h1>conditional</h1>
+<script type="text/noop">
+new Simplate(
+    '<h1>Hello {% if ($.name) { %}{%: $.name %}{% } else {%}{%: $.title %}{% } %}</h1>'
+).apply({
+    name: 'A Name',
+    title: 'A Title'
+});
+</script>
+</div>
+
 <script type="text/javascript">
 Ext.onReady(function() {   
     var template = new Simplate([
-        '<pre>{%= source %}</pre>',
-        '<pre class="result">{%= result %}</pre>',        
+        '<pre>{%= $.source %}</pre>',
+        '<pre class="result">{%= $.result %}</pre>',
     ]);    
 
     var format = function(text) {
