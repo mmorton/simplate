@@ -4,8 +4,9 @@
  *
  * MIT Licensed - See LICENSE.txt
  */
-(function() {
+(function(scope) {
     var trimRE = /^\s+|\s+$/g,
+        testRE = /(,)/,
         escQuoteRE = /'/g,
         escNewLineRE = /\n/g,
         entAmpRE = /&/g,
@@ -13,11 +14,14 @@
         entGtRE = />/g,
         entQuotRE = /"/g,
         cache = {},
+        cacheRE = {},
+        useCompatibleParser = ('is,ie'.split(testRE).length != 3),
         options = {
             tags: {
                 begin: "{%",
                 end: "%}"
-            }
+            },
+            allowWith: false
         };
 
     var mix = function(a, b, c) {
@@ -45,25 +49,51 @@
     var trim = function(val) {
         return val.replace(trimRE, '');
     };
+        
+    var parse = function(markup, o) {
+
+        var tagBegin = o.tags.begin,
+            tagEnd = o.tags.end;
+
+        if (!useCompatibleParser)
+        {
+            var key = tagBegin + tagEnd,
+                regex = cacheRE[key] || (cacheRE[key] = new RegExp(tagBegin + '(.*?)' + tagEnd));
+            
+            return markup.split(regex);
+        }
+
+        var nextBegin = 0,
+            nextEnd = 0,
+            markers = [];
+
+        while ((nextBegin = markup.indexOf(tagBegin, nextEnd)) != -1 &&
+               (nextEnd = markup.indexOf(tagEnd, nextBegin)) != -1)
+        {
+            markers[markers.length] = nextBegin;
+            markers[markers.length] = nextEnd;
+        }
+
+        var fragments = [],
+            at = 0;
+
+        for (var i = 0; i < markers.length; i++)
+        {
+            fragments[fragments.length] = markup.substr(at, markers[i] - at);
+            at = markers[i] + ((i % 2) ? tagEnd.length : tagBegin.length);
+        }
+
+        fragments.push(markup.substr(at));
+
+        return fragments;
+    };
 
     var make = function(markup, o) {
         if (markup.join) markup = markup.join('');
         if (cache[markup]) return cache[markup];
 
-        var o = mix({}, o, options);
-
-        if ('is,ie'.split(/(,)/).length !== 3)
-        {
-            var fragments = [];
-            var a = markup.split(o.tags.begin);
-            for (var i = 0; i < a.length; i++)
-                fragments.push.apply(fragments, a[i].split(o.tags.end));
-        }
-        else
-        {
-            var regex = new RegExp(o.tags.begin + '(.*?)' + o.tags.end);
-            var fragments = markup.split(regex);
-        }
+        var o = mix({}, o, options),
+            fragments = parse(markup, o);
 
         /* code fragments */
         for (var i = 1; i < fragments.length; i += 2)
@@ -76,13 +106,13 @@
                 switch (control)
                 {
                     case '=':
-                        fragments[i] = '__p(' + source + ');';
+                        fragments[i] = '__r.push(' + source + ');';
                         break;
                     case ':':
-                        fragments[i] = '__p(__s.encode(' + source + '));';
+                        fragments[i] = '__r.push(__s.encode(' + source + '));';
                         break;
                     case '!':
-                        fragments[i] = '__p(' + trim(source) + '.apply(__v, this));';
+                        fragments[i] = '__r.push(' + trim(source) + '.apply(__v, __c));';
                         break;
                     default:
                         break;
@@ -91,15 +121,15 @@
         }
 
         for (var i = 0; i < fragments.length; i += 2)
-            fragments[i] = '__p(\'' + escape(fragments[i]) + '\');';
+            fragments[i] = '__r.push(\'' + escape(fragments[i]) + '\');';
 
         fragments.unshift(
-            'var __r = [], $ = __v, $$ = this, __s = Simplate, __p = function() { __r.push.apply(__r, arguments); };',
-            'with ($ || {}) {'
+            'var __r = [], $ = __v, $$ = __c, __s = Simplate;',
+            options.allowWith ? 'with ($ || {}) {' : ''
         );
 
         fragments.push(
-            '}',
+            options.allowWith ? '}': '',
             'return __r.join(\'\');'
         );
        
@@ -107,7 +137,7 @@
 
         try
         {
-            fn = new Function('__v', fragments.join(''));
+            fn = new Function('__v, __c', fragments.join(''));
         }
         catch (e)
         {
@@ -117,7 +147,7 @@
         return (cache[markup] = fn);
     };
 
-    S = this.Simplate = function(markup, o) {
+    var S = scope.Simplate = function(markup, o) {
         this.fn = make(markup, o);
     };
 
@@ -127,8 +157,8 @@
     });
 
     mix(S.prototype, {
-        apply: function(data, scope) {
-            return this.fn.call(scope || this, data);
+        apply: function(data, container) {
+            return this.fn(data, container || this);
         }
     });
-})();
+})(this);
