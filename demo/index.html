@@ -143,6 +143,18 @@ new Simplate(
 </script>
 </div>
 
+<div class="sample">
+<h1>conditional</h1>
+<script type="text/noop">
+new Simplate(
+    '<h1>Hello {% if ($.name) { %}{%: $.name %}{% } else {%}{%: $.title %}{% } %}</h1>'
+).apply({
+    name: 'A Name',
+    title: 'A Title'
+});
+</script>
+</div>
+
 <script type="text/javascript">
 Ext.onReady(function() {   
     var template = new Simplate([
