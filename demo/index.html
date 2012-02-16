@@ -155,6 +155,45 @@ new Simplate(
 </script>
 </div>
 
+<div class="sample">
+<h1>with container</h1>
+<script type="text/noop">
+new Simplate(
+    '<h1>Hello {%: $.name %} at {%: $$.location %}</h1>'
+).apply({
+    name: 'Bob',
+}, {
+    location: 'Home'
+});
+</script>
+</div>
+
+<div class="sample">
+<h1>with container (this)</h1>
+<script type="text/noop">
+new Simplate(
+    '<h1>Hello {%: $.name %} at {%: this.location %}</h1>'
+).apply({
+    name: 'Bob',
+}, {
+    location: 'Home'
+});
+</script>
+</div>
+
+<div class="sample">
+<h1>make</h1>
+<script type="text/noop">
+(function() {
+    var template = Simplate.make(
+        '<h1>Hello {%: $.name %}</h1>'
+    );
+
+    return template({ name: 'Bob' });
+})();
+</script>
+</div>
+
 <script type="text/javascript">
 Ext.onReady(function() {   
     var template = new Simplate([
