@@ -24,10 +24,10 @@
             allowWith: false
         };
 
-    var mix = function(a, b, c) {
-        if (c) for (var n in c) a[n] = c[n];
-        if (b) for (var n in b) a[n] = b[n];
-        return a;
+    var mix = function(left, middle, right) {
+        if (right) for (var rightProp in right) left[rightProp] = right[rightProp];
+        if (middle) for (var middleProp in middle) left[middleProp] = middle[middleProp];
+        return left;
     };
 
     var encode = function(val) {
@@ -53,14 +53,17 @@
     var parse = function(markup, o) {
 
         var tagBegin = o.tags.begin,
-            tagEnd = o.tags.end;
+            tagEnd = o.tags.end,
+            fragments = [],
+            at = 0;
 
         if (!useCompatibleParser)
         {
             var key = tagBegin + tagEnd,
                 regex = cacheRE[key] || (cacheRE[key] = new RegExp(tagBegin + '(.*?)' + tagEnd));
             
-            return markup.split(regex);
+            fragments = markup.split(regex);
+            return fragments;
         }
 
         var nextBegin = 0,
@@ -73,9 +76,6 @@
             markers[markers.length] = nextBegin;
             markers[markers.length] = nextEnd;
         }
-
-        var fragments = [],
-            at = 0;
 
         for (var i = 0; i < markers.length; i++)
         {
@@ -92,8 +92,8 @@
         if (markup.join) markup = markup.join('');
         if (cache[markup]) return cache[markup];
 
-        var o = mix({}, o, options),
-            fragments = parse(markup, o);
+        var ob = mix({}, o, options),
+            fragments = parse(markup, ob);
 
         /* code fragments */
         for (var i = 1; i < fragments.length; i += 2)
@@ -106,13 +106,13 @@
                 switch (control)
                 {
                     case '=':
-                        fragments[i] = '__r.push(' + source + ');';
+                        fragments[i] = '__results.push(' + source + ');';
                         break;
                     case ':':
-                        fragments[i] = '__r.push(__s.encode(' + source + '));';
+                        fragments[i] = '__results.push(__simplate.encode(' + source + '));';
                         break;
                     case '!':
-                        fragments[i] = '__r.push(' + trim(source) + '.apply(__v, __c));';
+                        fragments[i] = '__results.push(' + trim(source) + '.apply(__data, __container));';
                         break;
                     default:
                         break;
@@ -120,31 +120,33 @@
             }
         }
 
-        for (var i = 0; i < fragments.length; i += 2)
-            fragments[i] = '__r.push(\'' + escape(fragments[i]) + '\');';
+        for (var x = 0; x < fragments.length; x += 2) {
+            fragments[x] = '__results.push(\'' + escape(fragments[x]) + '\');';
+        }
 
         fragments.unshift(
-            'var __r = [], $ = __v, $$ = __c, __s = Simplate;',
+            'var __results = [], $ = __data, $$ = __container, __simplate = Simplate;',
             options.allowWith ? 'with ($ || {}) {' : ''
         );
 
         fragments.push(
             options.allowWith ? '}': '',
-            'return __r.join(\'\');'
+            'return __results.join(\'\');'
         );
        
         var fn;
 
         try
         {
-            fn = new Function('__v, __c', fragments.join(''));
+            fn = new Function('__data, __container', fragments.join(''));
         }
         catch (e)
         {
             fn = function(values) { return e.message; };
         }
 
-        return (cache[markup] = fn);
+        cache[markup] = fn;
+        return cache[markup];
     };
 
     var Simplate = function(markup, o) {
