@@ -194,6 +194,22 @@ new Simplate(
 </script>
 </div>
 
+<div class="sample">
+<h1>No cache option</h1>
+<script type="text/noop">
+(function() {
+    var template = Simplate.make(
+        '<h1>Hello {%: $.name %}</h1>',
+        { 
+            cacheMarkup: false 
+        }
+    );
+
+    return template({ name: 'Bob' });
+})();
+</script>
+</div>
+
 <script type="text/javascript">
 Ext.onReady(function() {   
     var template = new Simplate([

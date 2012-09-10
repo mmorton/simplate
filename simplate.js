@@ -17,6 +17,7 @@
         cacheRE = {},
         useCompatibleParser = ('is,ie'.split(testRE).length != 3),
         options = {
+            cacheMarkup: true,
             tags: {
                 begin: "{%",
                 end: "%}"
@@ -24,10 +25,10 @@
             allowWith: false
         };
 
-    var mix = function(a, b, c) {
-        if (c) for (var n in c) a[n] = c[n];
-        if (b) for (var n in b) a[n] = b[n];
-        return a;
+    var mix = function(left, middle, right) {
+        if (right) for (var rightProp in right) left[rightProp] = right[rightProp];
+        if (middle) for (var middleProp in middle) left[middleProp] = middle[middleProp];
+        return left;
     };
 
     var encode = function(val) {
@@ -53,14 +54,17 @@
     var parse = function(markup, o) {
 
         var tagBegin = o.tags.begin,
-            tagEnd = o.tags.end;
+            tagEnd = o.tags.end,
+            fragments = [],
+            at = 0;
 
         if (!useCompatibleParser)
         {
             var key = tagBegin + tagEnd,
                 regex = cacheRE[key] || (cacheRE[key] = new RegExp(tagBegin + '(.*?)' + tagEnd));
             
-            return markup.split(regex);
+            fragments = markup.split(regex);
+            return fragments;
         }
 
         var nextBegin = 0,
@@ -74,9 +78,6 @@
             markers[markers.length] = nextEnd;
         }
 
-        var fragments = [],
-            at = 0;
-
         for (var i = 0; i < markers.length; i++)
         {
             fragments[fragments.length] = markup.substr(at, markers[i] - at);
@@ -89,30 +90,38 @@
     };
 
     var make = function(markup, o) {
-        if (markup.join) markup = markup.join('');
-        if (cache[markup]) return cache[markup];
+        var mixedOptions, fragments, i, x, control, source, fn;
 
-        var o = mix({}, o, options),
-            fragments = parse(markup, o);
+        mixedOptions = mix({}, o, options);
+
+        if (markup.join) {
+            markup = markup.join('');
+        }
+
+        if (mixedOptions.cacheMarkup && cache[markup]) {
+            return cache[markup];
+        }
+
+        fragments = parse(markup, mixedOptions);
 
         /* code fragments */
-        for (var i = 1; i < fragments.length; i += 2)
+        for (i = 1; i < fragments.length; i += 2)
         {
             if (fragments[i].length > 0)
             {
-                var control = fragments[i].charAt(0),
-                    source = fragments[i].substr(1);
+                control = fragments[i].charAt(0);
+                source = fragments[i].substr(1);
 
                 switch (control)
                 {
                     case '=':
-                        fragments[i] = '__r.push(' + source + ');';
+                        fragments[i] = '__results.push(' + source + ');';
                         break;
                     case ':':
-                        fragments[i] = '__r.push(__s.encode(' + source + '));';
+                        fragments[i] = '__results.push(__simplate.encode(' + source + '));';
                         break;
                     case '!':
-                        fragments[i] = '__r.push(' + trim(source) + '.apply(__v, __c));';
+                        fragments[i] = '__results.push(' + trim(source) + '.apply(__data, __container));';
                         break;
                     default:
                         break;
@@ -120,31 +129,35 @@
             }
         }
 
-        for (var i = 0; i < fragments.length; i += 2)
-            fragments[i] = '__r.push(\'' + escape(fragments[i]) + '\');';
+        for (x = 0; x < fragments.length; x += 2) {
+            fragments[x] = '__results.push(\'' + escape(fragments[x]) + '\');';
+        }
 
         fragments.unshift(
-            'var __r = [], $ = __v, $$ = __c, __s = Simplate;',
-            options.allowWith ? 'with ($ || {}) {' : ''
+            'var __results = [], $ = __data, $$ = __container, __simplate = Simplate;',
+            mixedOptions.allowWith ? 'with ($ || {}) {' : ''
         );
 
         fragments.push(
-            options.allowWith ? '}': '',
-            'return __r.join(\'\');'
+            mixedOptions.allowWith ? '}': '',
+            'return __results.join(\'\');'
         );
-       
-        var fn;
 
         try
         {
-            fn = new Function('__v, __c', fragments.join(''));
+            fn = new Function('__data, __container', fragments.join(''));
         }
         catch (e)
         {
             fn = function(values) { return e.message; };
         }
 
-        return (cache[markup] = fn);
+        if (mixedOptions.cacheMarkup) {
+            cache[markup] = fn;
+            return cache[markup];
+        } else {
+            return fn;
+        }
     };
 
     var Simplate = function(markup, o) {
