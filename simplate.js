@@ -17,6 +17,7 @@
         cacheRE = {},
         useCompatibleParser = ('is,ie'.split(testRE).length != 3),
         options = {
+            cacheMarkup: true,
             tags: {
                 begin: "{%",
                 end: "%}"
@@ -89,19 +90,27 @@
     };
 
     var make = function(markup, o) {
-        if (markup.join) markup = markup.join('');
-        if (cache[markup]) return cache[markup];
+        var mixedOptions, fragments, i, x, control, source, fn;
 
-        var ob = mix({}, o, options),
-            fragments = parse(markup, ob);
+        mixedOptions = mix({}, o, options);
+
+        if (markup.join) {
+            markup = markup.join('');
+        }
+
+        if (mixedOptions.cacheMarkup && cache[markup]) {
+            return cache[markup];
+        }
+
+        fragments = parse(markup, mixedOptions);
 
         /* code fragments */
-        for (var i = 1; i < fragments.length; i += 2)
+        for (i = 1; i < fragments.length; i += 2)
         {
             if (fragments[i].length > 0)
             {
-                var control = fragments[i].charAt(0),
-                    source = fragments[i].substr(1);
+                control = fragments[i].charAt(0);
+                source = fragments[i].substr(1);
 
                 switch (control)
                 {
@@ -120,21 +129,19 @@
             }
         }
 
-        for (var x = 0; x < fragments.length; x += 2) {
+        for (x = 0; x < fragments.length; x += 2) {
             fragments[x] = '__results.push(\'' + escape(fragments[x]) + '\');';
         }
 
         fragments.unshift(
             'var __results = [], $ = __data, $$ = __container, __simplate = Simplate;',
-            options.allowWith ? 'with ($ || {}) {' : ''
+            mixedOptions.allowWith ? 'with ($ || {}) {' : ''
         );
 
         fragments.push(
-            options.allowWith ? '}': '',
+            mixedOptions.allowWith ? '}': '',
             'return __results.join(\'\');'
         );
-       
-        var fn;
 
         try
         {
@@ -145,8 +152,12 @@
             fn = function(values) { return e.message; };
         }
 
-        cache[markup] = fn;
-        return cache[markup];
+        if (mixedOptions.cacheMarkup) {
+            cache[markup] = fn;
+            return cache[markup];
+        } else {
+            return fn;
+        }
     };
 
     var Simplate = function(markup, o) {
