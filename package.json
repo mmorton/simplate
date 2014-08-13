@@ -1,0 +1,23 @@
+{
+    "name": "simplate",
+    "description": "A simple but powerful templating engine for JavaScript.",
+    "author": "Michael Morton <mmorton@icanhascode.com>",
+    "repository": {
+        "type": "git",
+        "url": "git://github.com/mmorton/simplate.git"
+    },
+    "main": "simplate.js",
+    "version": "2.0.0",
+    "devDependencies": {
+        "qunitjs": "1.x.x"
+    },
+    "scripts": {
+
+    },
+    "licenses": [
+        {
+            "type": "MIT",
+            "url": "https://raw.github.com/mmorton/simplate/master/LICENSE"
+        }
+    ]
+}
